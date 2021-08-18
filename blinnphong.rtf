@@ -1,0 +1,210 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2580
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fmodern\fcharset0 Courier;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;}
+{\*\expandedcolortbl;;\cssrgb\c0\c0\c0;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\deftab720
+\pard\pardeftab720\partightenfactor0
+
+\f0\fs26 \cf0 \expnd0\expndtw0\kerning0
+const char shader[] =\
+ "#version 120\\n"\
+ "uniform mat4 mvp;\\n"\
+ "uniform mat4 mv;\\n"\
+ "uniform mat4 mvit;\\n"\
+ "attribute vec4 vertex_position;\\n"\
+ "attribute vec3 vertex_normal;\\n"\
+ "varying   vec3 normal, view;\\n"\
+ "\\n"\
+ "void main()\\n"\
+ "\{\\n"\
+ "  gl_Position = mvp * vertex_position;\\n"\
+ "  normal = normalize (mat3(mvit) * vertex_normal);\\n"\
+ "  view = vec3 ( - mv * vertex_position);\\n"\
+ "\}\\n"\
+ "---\\n"\
+ "#version 120\\n"\
+ "const vec3 lightvec = normalize (vec3 (-2, 1, 3));\\n"\
+ "const vec4 Ia = vec4 (.2, .2, .2, 0);\\n"\
+ "const vec4 Id = vec4 (1, 1, 1, 0);\\n"\
+ "const vec4 Is = Id;\\n"\
+ "const vec4 ka = vec4 (.3, .5, 1, 0);\\n"\
+ "const vec4 ke = vec4 (0, 0, 0, 0);\\n"\
+ "const vec4 kd = ka;\\n"\
+ "const vec4 ks = vec4 (.5, .5, .5, 0);\\n"\
+ "const float kse = 50;\\n"\
+ "varying   vec3 normal, view;\\n"\
+ "void main()\\n"\
+ "\{\\n"\
+ "  vec3 n = normalize (normal);\\n"\
+ "  float diffuse = max (dot (n, lightvec), 0);\\n"\
+ "  vec3 h = normalize (lightvec + normalize (view));\\n"\
+ "  float specular = max (pow (dot (n, h), kse), 0);\\n"\
+ "  gl_FragColor = Ia * ka + Id * kd * diffuse + Is * ks * specular;\\n"\
+ "\}\\n";\
+\
+#include <glvertex_qt_glui.h>\
+#include <glvertex_qt_shadereditor.h>\
+\
+class Qt_GLWindow: public lgl_Qt_GLUI\
+\{\
+public:\
+\
+    Qt_GLWindow() :\
+        lgl_Qt_GLUI()\
+    \{ \}\
+\
+    virtual ~Qt_GLWindow()\
+    \{\
+        lglDeleteGLSLProgram (program);\
+    \}\
+\
+\
+protected:\
+\
+    GLuint    program = 0;\
+    int       objecttype = 0;\
+    GLuint    name_tex;\
+\
+    lglVBO    triangle;\
+    lglTeapot teapot;\
+    lglCube   cube;\
+    lglSphere sphere;\
+\
+    static const int num_objs = 6;\
+    lglVBO   *objs[num_objs]  = \{ &triangle, &cube, &sphere, &teapot, NULL, NULL \};\
+    float     scale[num_objs] = \{ 1,         1.5,   1.5,     1.5,     .7,   .8 \};\
+\
+    void initializeOpenGL()\
+    \{\
+        glClearColor(0,0,0,1);\
+        glEnable(GL_DEPTH_TEST);\
+\
+        // Compile and use shaders\
+        program = lglCompileGLSLProgram (shader);\
+\
+        // Editor window\
+        create_lgl_Qt_ShaderEditor ("shader", &program);\
+\
+        // Create triangle VBO\
+        triangle.lglBegin  (LGL_TRIANGLES);\
+        triangle.lglNormal (0, 0, 1);\
+        triangle.lglColor  (1, 0, 0, 1);\
+        triangle.lglVertex (+0, +0.8, 0, 1);\
+        triangle.lglColor  (0, 1, 0, 1);\
+        triangle.lglVertex (+1, -0.8, 0, 1);\
+        triangle.lglColor  (0, 0, 1, 1);\
+        triangle.lglVertex (-1, -0.8, 0, 1);\
+        triangle.lglNormal (1, 0, 0);\
+        triangle.lglColor  (0, 0, 0, 1);\
+        triangle.lglVertex (+0, +0.8, 0, 1);\
+        triangle.lglColor  (1, 1, 1, 1);\
+        triangle.lglVertex (0, -0.8, +1, 1);\
+        triangle.lglColor  (1, 1, 1, 1);\
+        triangle.lglVertex (0, -0.8, -1, 1);\
+        triangle.lglEnd    ();\
+\
+        objs[4] = lglLoadObj ("flamingo.obj", true);\
+        objs[5] = lglLoadObj ("horse.obj", true);\
+\
+#if 0\
+        glGenTextures (1, &name_tex);\
+\
+        glActiveTexture (GL_TEXTURE0 + 0);\
+        glBindTexture   (GL_TEXTURE_2D, name_tex);\
+\
+        QImage tmpImage ("kermit.png");\
+        QImage image = tmpImage.convertToFormat (QImage::Format_RGB888);\
+\
+        glTexImage2D(GL_TEXTURE_2D,    // 2D texture\
+                     0,                // level 0 (for mipmapping)\
+                     GL_RGB,           // pixel format of texture\
+                     image.width(),\
+                     image.height(),   // texture size\
+                     0,                // border size 0\
+                     GL_RGB,           // pixel format of data supplied\
+                     GL_UNSIGNED_BYTE, // pixel storage type of data supplied\
+                     image.bits());    // pointer to data chunk\
+\
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);\
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);\
+#endif\
+#if 0\
+        glActiveTexture (GL_TEXTURE0 + 0);\
+\
+        QImage tmpImage ("kermit.png");\
+        QImage image = tmpImage.convertToFormat (QImage::Format_RGB888);\
+        int width = image.width(), height = image.height();\
+\
+        name_tex = lglCreateMipmap2D (width, height, LGL_RGB, image.bits());\
+        glBindTexture   (GL_TEXTURE_2D, name_tex);\
+        glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);\
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);\
+#endif\
+    \}\
+\
+    void renderOpenGL(double dt)\
+    \{\
+        static double t;\
+        t += dt;\
+\
+        // clear frame buffer\
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);\
+\
+        // reenable shader w/o clearing uniforms\
+        lglUseProgram (program, false);\
+\
+        // projection setup\
+        double fovy = 45;\
+        double aspect = (double)width()/height();\
+        double nearp = 0.1;\
+        double farp = 1000;\
+\
+        mat4 proj = mat4::perspective(fovy, aspect, nearp, farp);\
+        lglProjection (proj);\
+\
+        // View setup\
+        mat4 mv = mat4::lookat(vec3(0,0,4), vec3(0,0,0), vec3(0,1,0));\
+        mv = mv * lglGetManip();\
+        mv = mv * mat4::scale (scale [objecttype]);\
+\
+        // load matrices + uniforms\
+        lglModelView  (mv);\
+        lglUniformf   ("time", t);\
+        lglUniformi   ("tex", 0);\
+        glBindTexture (GL_TEXTURE_2D, name_tex);\
+\
+        // render\
+        lglRender     (objs [objecttype]);\
+    \}\
+\
+    void keyPressed (char key)\
+    \{\
+        switch (key) \{\
+        case 'o':\
+            objecttype++;\
+            if (objecttype >= num_objs)\
+                objecttype = 0;\
+            break;\
+        \}\
+    \}\
+\
+    std::string getKeyInfo()\
+    \{\
+        const char keys[] =\
+            "o: changed rendered object\\n"\
+            "nothing else yet\\n";\
+\
+        return(lgl_Qt_GLUI::getKeyInfo() + "\\n" + keys);\
+    \}\
+\};\
+\
+int main(int argc, char *argv[])\
+\{\
+    QApplication app(argc, argv);\
+\
+    Qt_GLWindow main;\
+    main.show();\
+\
+    return(app.exec());\
+\}}

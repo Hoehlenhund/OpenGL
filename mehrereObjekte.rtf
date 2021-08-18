@@ -1,0 +1,88 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2580
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fmodern\fcharset0 Courier;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;}
+{\*\expandedcolortbl;;\cssrgb\c0\c0\c0;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\deftab720
+\pard\pardeftab720\partightenfactor0
+
+\f0\fs26 \cf0 \expnd0\expndtw0\kerning0
+#include <glvertex_qt_glui.h>\
+using namespace std;\
+\
+class Qt_GLWindow: public lgl_Qt_GLUI\
+\{\
+public:\
+    Qt_GLWindow() : lgl_Qt_GLUI() \{ \}\
+    virtual ~Qt_GLWindow() \{ \}\
+\
+protected:\
+\
+    lglCube   cube;\
+    lglTeapot tea;\
+\
+    void initializeOpenGL()\
+    \{\
+        glClearColor (0, 0, 0, 0);\
+    \}\
+\
+    void renderOpenGL(double dt)\
+    \{\
+        static double winkel = 0;\
+        winkel += .25 * 360 * dt;\
+\
+        cout << "display" << endl;\
+        glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);\
+\
+        mat4 proj = mat4::perspective (60.0, 1.0, 1.0, 100.0);\
+        lglProjection (proj);\
+\
+        vec3 eye (0, 0, 3), center (0, 0, 0), up (0, 1, 0);\
+        mat4 mv = mat4::lookat (eye, center, up);\
+        mv = mv * lglGetManip  ();\
+\
+        // Teapot im Ursprung\
+        lglModelView  (mv);\
+        lglColor      (1, .5, 0);\
+        lglRender     (tea);\
+\
+        // Wuerfel 2 Einheiten nach oben\
+        mv       = mv  * mat4::translate (vec3 (0, 1, 0));\
+        mat4 mv1 = mv  * mat4::rotate    (winkel, vec3 (0, 0, 1));\
+        mv1      = mv1 * mat4::scale     (0.2);\
+        lglModelView  (mv1);\
+        lglColor      (0, 1, 0);\
+        lglRender     (cube);\
+\
+        // anderer Wuerfel neben W\'c3\'bcrfel\
+        mat4 mv2 = mv  * mat4::rotate    (.25 * winkel, vec3 (0, 0, 1));\
+             mv2 = mv2 * mat4::translate (vec4 (0.5, 0, 0));\
+             mv2 = mv2 * mat4::rotate    (4 * winkel, vec3 (0, 0, 1));\
+             mv2 = mv2 * mat4::scale     (0.15);\
+        lglModelView  (mv2);\
+        lglColor      (0, 1, 1);\
+        lglRender     (cube);\
+\
+        /*\
+        lglBegin  (LGL_TRIANGLES);\
+        lglColor  ( 0,  0,   1);\
+        lglVertex ( 0,  0.7, 0);\
+        lglColor  ( 0,  1,   0);\
+        lglVertex (-1, -0.7, 0);\
+        lglColor  ( 1,  0,   0);\
+        lglVertex (+1, -0.7, 0);\
+        lglEnd    ();\
+        */\
+\
+    \}\
+\};\
+\
+int main(int argc, char *argv[])\
+\{\
+    QApplication app(argc, argv);\
+\
+    Qt_GLWindow main;\
+    main.show();\
+\
+    return(app.exec());\
+\}}
